@@ -1,12 +1,9 @@
 use std::io::{Read, Seek, SeekFrom};
 
 use anyhow::bail;
-use flate2::read::{GzDecoder, ZlibDecoder};
+use flate2::bufread::{GzDecoder, ZlibDecoder};
 
-use crate::{
-    chunk_format::Chunk,
-    de::{from_reader, from_slice},
-};
+use crate::{chunk_format::Chunk, de::from_slice};
 
 const SECTOR_SIZE: usize = 4 * 1024;
 
@@ -24,16 +21,22 @@ where
     let chunk = match compression_type {
         1 => {
             let mut gz = GzDecoder::new(&buf[..]);
-            from_reader(&mut gz)
+            let mut buf = Vec::new();
+            gz.read_to_end(&mut buf)?;
+            from_slice(&buf)
         }
         2 => {
             let mut zlib = ZlibDecoder::new(&buf[..]);
-            from_reader(&mut zlib)
+            let mut buf = Vec::new();
+            zlib.read_to_end(&mut buf)?;
+            from_slice(&buf)
         }
         3 => from_slice(&buf),
         4 => {
             let mut lz4 = lz4_flex::frame::FrameDecoder::new(&buf[..]);
-            from_reader(&mut lz4)
+            let mut buf = Vec::new();
+            lz4.read_to_end(&mut buf)?;
+            from_slice(&buf)
         }
         _ => bail!(
             "unknown compression type for Anvil file: {}",
