@@ -1,10 +1,33 @@
 [package]
-name = "minecraft-tokei"
+name = "nombrilo"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kirsten Laskoski"]
+license = "MIT"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.79"
+cesu8 = "1.1.0"
+clap = { version = "4.4.18", features = ["derive"] }
+counter = "0.5.7"
 flate2 = "1.0.28"
+lz4_flex = "0.11.2"
+rayon = "1.8.0"
+serde = { version = "1.0.195", features = ["derive"] }
+tabled = "0.15.0"
+
+# [lints.rust]
+# missing_docs = "warn"
+
+# [lints.clippy]
+# missing_docs_in_private_items = "warn"
+
+# [lints.rustdoc]
+# broken_intra_doc_links = "warn"
+
+[profile.release]
+# Uncomment to allow debugging in release mode, useful for profiling
+# debug = true

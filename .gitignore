@@ -1,1 +1,16 @@
+# rust builds
 /target
+
+# profiling
+/venv
+callgrind.*
+
+# minecraft files
+*.mca
+*.dat
+
+# misc output files
+*.txt
+
+# vscode preferences
+.vscode/
