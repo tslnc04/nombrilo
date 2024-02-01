@@ -20,6 +20,12 @@ pub(super) trait Read<'de> {
     fn read_float(&mut self) -> Result<f32, Error>;
     fn read_double(&mut self) -> Result<f64, Error>;
 
+    fn read_bytes<'s>(
+        &'s mut self,
+        len_multiplier: usize,
+        scratch: &'s mut Vec<u8>,
+    ) -> Result<Reference<'de, 's, [u8]>, Error>;
+
     fn read_string<'s>(
         &'s mut self,
         scratch: &'s mut Vec<u8>,
@@ -85,6 +91,19 @@ where
         let mut buf = [0; 8];
         self.reader.read_exact(&mut buf)?;
         Ok(f64::from_be_bytes(buf))
+    }
+
+    fn read_bytes<'s>(
+        &'s mut self,
+        len_multiplier: usize,
+        scratch: &'s mut Vec<u8>,
+    ) -> Result<Reference<'a, 's, [u8]>, Error> {
+        let mut buf = [0; 4];
+        self.reader.read_exact(&mut buf)?;
+        let len = usize::try_from(i32::from_be_bytes(buf)).map_err(|_| Error::NegativeLength)?;
+        scratch.resize(len * len_multiplier, 0);
+        self.reader.read_exact(scratch.as_mut_slice())?;
+        Ok(Reference::Copied(scratch.as_slice()))
     }
 
     fn read_string<'s>(
@@ -168,6 +187,21 @@ impl<'a> Read<'a> for Slice<'a> {
         Ok(f64::from_be_bytes([
             double[0], double[1], double[2], double[3], double[4], double[5], double[6], double[7],
         ]))
+    }
+
+    fn read_bytes<'s>(
+        &'s mut self,
+        len_multiplier: usize,
+        _scratch: &'s mut Vec<u8>,
+    ) -> Result<Reference<'a, 's, [u8]>, Error> {
+        let (len_bytes, rest) = self.slice.split_at(4);
+        self.slice = rest;
+        let len = i32::from_be_bytes([len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]]);
+        let (bytes, rest) = self
+            .slice
+            .split_at(usize::try_from(len).map_err(|_| Error::NegativeLength)? * len_multiplier);
+        self.slice = rest;
+        Ok(Reference::Borrowed(bytes))
     }
 
     fn read_string<'s>(

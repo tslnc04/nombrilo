@@ -54,7 +54,7 @@ The output of the last example run on the Hermitcraft Season 9 world.
 ├──────────────────────┼────────────┤
 │ minecraft:tuff       │ 178996347  │
 └──────────────────────┴────────────┘
-Done in 6.231360924s.
+Done in 2.533113483s.
 ```
 
 ## Name

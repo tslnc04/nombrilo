@@ -4,6 +4,7 @@
 # profiling
 /venv
 callgrind.*
+callgrind_*
 
 # minecraft files
 *.mca

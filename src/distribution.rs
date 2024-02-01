@@ -12,7 +12,7 @@ fn distribution(block_states: &BlockStates) -> Vec<u64> {
 
     let mut distribution = vec![0; block_states.palette.len()];
     for index in block_states.unpack_data() {
-        distribution[index] += 1;
+        distribution[index as usize] += 1;
     }
     distribution
 }

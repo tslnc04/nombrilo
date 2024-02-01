@@ -99,7 +99,7 @@ where
 {
     type Error = Error;
 
-    forward_to_deserialize_any! { i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes byte_buf unit unit_struct newtype_struct tuple tuple_struct struct enum identifier ignored_any }
+    forward_to_deserialize_any! { i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string byte_buf unit unit_struct newtype_struct tuple tuple_struct struct enum identifier ignored_any }
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -133,6 +133,28 @@ where
             0 => visitor.visit_bool(false),
             1 => visitor.visit_bool(true),
             n => Err(Error::InvalidBooleanValue(n)),
+        }
+    }
+
+    // Allow more efficient deserialization of byte arrays, int arrays, and long
+    // arrays for types that hint it in Deserialize.
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        let len_multiplier = match self.tag_type {
+            TagType::ByteArray => 1,
+            TagType::IntArray => 4,
+            TagType::LongArray => 8,
+            _ => Err(Error::InvalidTagForBytes(self.tag_type))?,
+        };
+        match self
+            .de
+            .reader
+            .read_bytes(len_multiplier, &mut self.de.scratch)?
+        {
+            Reference::Copied(bytes) => visitor.visit_bytes(bytes),
+            Reference::Borrowed(bytes) => visitor.visit_borrowed_bytes(bytes),
         }
     }
 

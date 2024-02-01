@@ -1,8 +1,13 @@
+#[cfg(feature = "nightly")]
+use core::slice;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::nbt::Tag;
+
+#[cfg(feature = "nightly")]
+use crate::unpack;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Chunk {
@@ -91,15 +96,27 @@ impl BlockStates {
     }
 
     /// Unpacks the block state data into a flat array of block state indices.
-    pub fn unpack_data(&self) -> Vec<usize> {
+    pub fn unpack_data(&self) -> Vec<u16> {
         if let Some(data) = self.data.as_ref() {
+            #[cfg(feature = "nightly")]
+            if self.palette.len() <= 32 {
+                unsafe {
+                    // Assumes little endian
+                    let data = slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * 8);
+                    if self.palette.len() <= 16 {
+                        return unpack::unpack4::<64>(data);
+                    }
+                    return unpack::unpack5(data);
+                }
+            }
+
             let bits_per_block = self.bits_per_block();
             let blocks_per_long = 64 / bits_per_block;
             let mut unpacked = Vec::with_capacity(data.len() * blocks_per_long);
             for long in data {
                 for i in 0..blocks_per_long {
                     unpacked.push(
-                        ((long >> (i * bits_per_block)) & ((1 << bits_per_block) - 1)) as usize,
+                        ((long >> (i * bits_per_block)) & ((1 << bits_per_block) - 1)) as u16,
                     );
                 }
             }
@@ -112,11 +129,8 @@ impl BlockStates {
     /// The number of bits used to store the block state indices. Minimum of 4
     /// and maximum of 12 since palette length is limited to 4096.
     fn bits_per_block(&self) -> usize {
-        let mut bits = 4;
-        while (self.palette.len() - 1) >> bits != 0 {
-            bits += 1;
-        }
-        bits
+        // Equivalent to ceil(log_2(palette.len())) clamped to 4 and 12.
+        (usize::BITS - (self.palette.len() - 1).leading_zeros()).clamp(4, 12) as usize
     }
 }
 

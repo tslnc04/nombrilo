@@ -31,3 +31,6 @@ tabled = "0.15.0"
 [profile.release]
 # Uncomment to allow debugging in release mode, useful for profiling
 # debug = true
+
+[features]
+nightly = []

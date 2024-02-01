@@ -14,6 +14,7 @@ pub enum Error {
     UnexpectedEndTag,
     InvalidTagForSeq(TagType),
     InvalidTagType(u8),
+    InvalidTagForBytes(TagType),
 }
 
 impl From<std::io::Error> for Error {
@@ -47,6 +48,9 @@ impl std::fmt::Display for Error {
                 write!(f, "invalid tag type for sequence: {:?}", tag_type)
             }
             Error::InvalidTagType(byte) => write!(f, "invalid tag type: {}", byte),
+            Error::InvalidTagForBytes(tag_type) => {
+                write!(f, "invalid tag type for byte array: {:?}", tag_type)
+            }
         }
     }
 }
