@@ -1,10 +1,8 @@
-#[cfg(feature = "nightly")]
-use core::slice;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::nbt::Tag;
+use crate::nbt::owned::{ByteArray, LongArray, Tag};
 
 #[cfg(feature = "nightly")]
 use crate::unpack;
@@ -60,11 +58,11 @@ pub struct Section {
     /// Block light is stored as a packed array of bytes. Each nybble represents
     /// a single block. Omitted if there is no block light data.
     #[serde(rename = "BlockLight")]
-    pub block_light: Option<Vec<i8>>,
+    pub block_light: Option<ByteArray>,
     /// Sky light is stored as a packed array of bytes. Each nybble represents a
     /// single block. Omitted if all values 0x00 or 0xff.
     #[serde(rename = "SkyLight")]
-    pub sky_light: Option<Vec<i8>>,
+    pub sky_light: Option<ByteArray>,
 }
 
 /// Block states are stored as a packed array of longs that represent indices
@@ -73,7 +71,7 @@ pub struct Section {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockStates {
     pub palette: Vec<BlockStatePalette>,
-    pub data: Option<Vec<i64>>,
+    pub data: Option<LongArray>,
 }
 
 impl BlockStates {
@@ -86,7 +84,8 @@ impl BlockStates {
 
             let data_index = packed_index / blocks_per_long;
             let long_index = packed_index % blocks_per_long;
-            let palette_index = (data[data_index] as u64 >> (long_index * bits_per_block))
+            let palette_index = (data.get(data_index).unwrap() as u64
+                >> (long_index * bits_per_block))
                 & ((1 << bits_per_block) - 1);
 
             &self.palette[palette_index as usize]
@@ -96,24 +95,27 @@ impl BlockStates {
     }
 
     /// Unpacks the block state data into a flat array of block state indices.
-    pub fn unpack_data(&self) -> Vec<u16> {
-        if let Some(data) = self.data.as_ref() {
+    pub fn unpack_data(&mut self) -> Vec<u16> {
+        let bits_per_block = self.bits_per_block();
+        if let Some(data) = self.data.as_mut() {
             #[cfg(feature = "nightly")]
             if self.palette.len() <= 32 {
-                unsafe {
-                    // Assumes little endian
-                    let data = slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * 8);
-                    if self.palette.len() <= 16 {
-                        return unpack::unpack4::<64>(data);
-                    }
-                    return unpack::unpack5(data);
+                // Assumes little endian
+                if self.palette.len() <= 16 {
+                    return match data.big_endian() {
+                        true => unpack::unpack4_be::<64>(data.as_raw_slice()),
+                        false => unpack::unpack4_le::<64>(data.as_raw_slice()),
+                    };
                 }
+                return match data.big_endian() {
+                    true => unpack::unpack5_be(data.as_raw_slice()),
+                    false => unpack::unpack5_le(data.as_raw_slice()),
+                };
             }
 
-            let bits_per_block = self.bits_per_block();
             let blocks_per_long = 64 / bits_per_block;
             let mut unpacked = Vec::with_capacity(data.len() * blocks_per_long);
-            for long in data {
+            for long in data.as_slice() {
                 for i in 0..blocks_per_long {
                     unpacked.push(
                         ((long >> (i * bits_per_block)) & ((1 << bits_per_block) - 1)) as u16,
@@ -149,7 +151,7 @@ pub struct BlockStatePalette {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Biomes {
     pub palette: Vec<String>,
-    pub data: Option<Vec<i64>>,
+    pub data: Option<LongArray>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -170,12 +172,12 @@ pub struct BlockEntity {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct HeightMaps {
-    pub motion_blocking: Vec<i64>,
-    pub motion_blocking_no_leaves: Vec<i64>,
-    pub ocean_floor: Vec<i64>,
-    pub ocean_floor_wg: Vec<i64>,
-    pub world_surface: Vec<i64>,
-    pub world_surface_wg: Vec<i64>,
+    pub motion_blocking: LongArray,
+    pub motion_blocking_no_leaves: LongArray,
+    pub ocean_floor: LongArray,
+    pub ocean_floor_wg: LongArray,
+    pub world_surface: LongArray,
+    pub world_surface_wg: LongArray,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -191,7 +193,7 @@ pub struct Structures {
     /// Chunk coordinates of the structure starts. The lower 32 bits are the X
     /// coordinate and the upper 32 bits are the Z coordinate.
     #[serde(rename = "References")]
-    pub references: HashMap<String, Vec<i64>>,
+    pub references: HashMap<String, LongArray>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
