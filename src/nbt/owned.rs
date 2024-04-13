@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde::{de::Visitor, Deserialize, Serialize};
 
-#[cfg(feature = "nightly")]
 use crate::unpack;
 
 macro_rules! impl_array_deserialize {
@@ -156,15 +155,8 @@ impl IntArray {
     }
 
     fn swap_endianness(&mut self) {
-        for i in 0..self.inner.len() / 4 {
-            let x = u32::from_be_bytes([
-                self.inner[i * 4],
-                self.inner[i * 4 + 1],
-                self.inner[i * 4 + 2],
-                self.inner[i * 4 + 3],
-            ]);
-            self.inner[i * 4..(i + 1) * 4].copy_from_slice(&x.to_le_bytes());
-        }
+        let swapped = unpack::swap_endianness_32bit(&self.inner);
+        self.inner = swapped;
         self.native_endian = true;
     }
 }
@@ -222,26 +214,8 @@ impl LongArray {
     }
 
     fn swap_endianness(&mut self) {
-        #[cfg(feature = "nightly")]
-        unpack::swap_endianness_64bit::<64>(self.inner.as_mut());
-        let remaining = if cfg!(feature = "nightly") {
-            self.inner.len() % 64
-        } else {
-            self.inner.len()
-        };
-        for i in (self.inner.len() - remaining) / 8..self.inner.len() / 8 {
-            let x = u64::from_be_bytes([
-                self.inner[i * 8],
-                self.inner[i * 8 + 1],
-                self.inner[i * 8 + 2],
-                self.inner[i * 8 + 3],
-                self.inner[i * 8 + 4],
-                self.inner[i * 8 + 5],
-                self.inner[i * 8 + 6],
-                self.inner[i * 8 + 7],
-            ]);
-            self.inner[i * 8..(i + 1) * 8].copy_from_slice(&x.to_le_bytes());
-        }
+        let swapped = unpack::swap_endianness_64bit(&self.inner);
+        self.inner = swapped;
         self.native_endian = true;
     }
 }

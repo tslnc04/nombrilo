@@ -1,6 +1,6 @@
 [package]
 name = "nombrilo"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Kirsten Laskoski"]
 license = "MIT"
@@ -33,4 +33,6 @@ tabled = "0.15.0"
 # debug = true
 
 [features]
+default = []
 nightly = []
+simd = []

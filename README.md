@@ -28,11 +28,13 @@ nombrilo -n 5 world/region
 ```
 
 Get the sorted top 10 most common blocks in the nether of `world`, ignoring air.
+
 ```
 nombrilo -s -i air world/DIM-1/region
 ```
 
 Get the sorted top 5 most common blocks in all dimensions of `world`, ignoring air, water, and lava, printing how long it took.
+
 ```
 nombrilo -v -s -n 5 -i air -i water -i lava world/region world/DIM-1/region world/DIM1/region
 ```
@@ -40,6 +42,7 @@ nombrilo -v -s -n 5 -i air -i water -i lava world/region world/DIM-1/region worl
 ### Example Output
 
 The output of the last example run on the Hermitcraft Season 9 world.
+
 ```
 ┌──────────────────────┬────────────┐
 │ Block                │ Count      │
@@ -70,4 +73,3 @@ Thanks to [`serde_json`](https://github.com/serde-rs/json), [`fastnbt`](https://
 Copyright 2024 Kirsten Laskoski.
 
 Licensed under MIT.
-

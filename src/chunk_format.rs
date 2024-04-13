@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::nbt::owned::{ByteArray, LongArray, Tag};
-
-#[cfg(feature = "nightly")]
-use crate::unpack;
+use crate::{
+    nbt::owned::{ByteArray, LongArray, Tag},
+    unpack,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Chunk {
@@ -98,19 +98,12 @@ impl BlockStates {
     pub fn unpack_data(&mut self) -> Vec<u16> {
         let bits_per_block = self.bits_per_block();
         if let Some(data) = self.data.as_mut() {
-            #[cfg(feature = "nightly")]
             if self.palette.len() <= 32 {
                 // Assumes little endian
                 if self.palette.len() <= 16 {
-                    return match data.big_endian() {
-                        true => unpack::unpack4_be::<64>(data.as_raw_slice()),
-                        false => unpack::unpack4_le::<64>(data.as_raw_slice()),
-                    };
+                    return unpack::unpack4(data.as_raw_slice(), data.big_endian());
                 }
-                return match data.big_endian() {
-                    true => unpack::unpack5_be(data.as_raw_slice()),
-                    false => unpack::unpack5_le(data.as_raw_slice()),
-                };
+                return unpack::unpack5(data.as_raw_slice(), data.big_endian());
             }
 
             let blocks_per_long = 64 / bits_per_block;

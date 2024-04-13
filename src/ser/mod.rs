@@ -388,7 +388,10 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), Self::Error> {
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
         self.key.get_mut().clear();
         self.key.set_position(0);
         key.serialize(map_key::Serializer::new(
@@ -398,9 +401,9 @@ where
         Ok(())
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: ?Sized + Serialize,
     {
         let value_type = to_tag_type(value)?;
         self.serializer.formatter.start_entry(
