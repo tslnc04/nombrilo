@@ -15,7 +15,8 @@ where
     reader.read_exact(&mut buf)?;
     let length = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]) as usize;
     let compression_type = buf[4];
-    let mut buf = vec![0; length];
+    // We subtract 1 from length to account for the compression type byte.
+    let mut buf = vec![0; length - 1];
     reader.read_exact(&mut buf)?;
 
     let chunk = match compression_type {

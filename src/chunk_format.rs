@@ -35,9 +35,10 @@ pub struct Chunk {
     #[serde(rename = "PostProcessing")]
     pub post_processing: Vec<Vec<i16>>,
     pub structures: Structures,
-    /// Determines whether to load the light data for the chunk.
+    /// Determines whether to load the light data for the chunk. May be omitted
+    /// apparently.
     #[serde(rename = "isLightOn")]
-    pub is_light_on: bool,
+    pub is_light_on: Option<bool>,
 
     /// Omitted if there are no block ticks in the chunk.
     pub block_ticks: Option<Vec<TileTick>>,
@@ -151,7 +152,7 @@ pub struct Biomes {
 pub struct BlockEntity {
     pub id: String,
     #[serde(rename = "keepPacked")]
-    keep_packed: bool,
+    keep_packed: Option<bool>,
     pub x: i32,
     pub y: i32,
     pub z: i32,
